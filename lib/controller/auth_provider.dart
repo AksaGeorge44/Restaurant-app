@@ -1,8 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/material.dart';
 
-import '../model/category.dart';
+import '../view/home_screen.dart';
 
 class AuthService with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -12,26 +12,7 @@ class AuthService with ChangeNotifier {
 
   Stream<User?> get userStream => _auth.authStateChanges();
 
-  List<Product> _cartItems = [];
-
-  List<Product> get cartItems => _cartItems;
-
-  void addToCart(Product product) {
-    _cartItems.add(product);
-    notifyListeners();
-  }
-
-  void removeFromCart(Product product) {
-    _cartItems.remove(product);
-    notifyListeners();
-  }
-
-  void clearCart() {
-    _cartItems.clear();
-    notifyListeners();
-  }
-
-  Future<void> signInWithGoogle() async {
+  Future<void> signInWithGoogle(BuildContext context) async {
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
     if (googleUser != null) {
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -40,15 +21,17 @@ class AuthService with ChangeNotifier {
         idToken: googleAuth.idToken,
       );
       await _auth.signInWithCredential(credential);
+      _navigateToHomeScreen(context);
       notifyListeners();
     }
   }
 
-  Future<void> signInWithPhoneNumber(String phoneNumber, Function(String) codeSent) async {
+  Future<void> signInWithPhoneNumber(String phoneNumber, Function(String) codeSent, BuildContext context) async {
     await _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
         await _auth.signInWithCredential(credential);
+        _navigateToHomeScreen(context);
         notifyListeners();
       },
       verificationFailed: (FirebaseAuthException e) {
@@ -64,7 +47,15 @@ class AuthService with ChangeNotifier {
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();
-    clearCart(); // Clear cart on sign out
     notifyListeners();
+  }
+  Future<void> signInWithCredential(PhoneAuthCredential credential) async {
+    await _auth.signInWithCredential(credential);
+  }
+
+  void _navigateToHomeScreen(BuildContext context) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => HomeScreen()),
+    );
   }
 }

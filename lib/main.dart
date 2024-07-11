@@ -5,8 +5,6 @@ import 'package:taskproject/controller/auth_provider.dart';
 import 'package:taskproject/controller/cart_provider.dart';
 import 'package:taskproject/firebase_options.dart';
 import 'package:taskproject/view/auth_screen.dart';
-import 'package:taskproject/view/home_screen.dart';
-
 import 'controller/category_provider.dart';
 
 Future<void> main() async{
@@ -32,13 +30,15 @@ class MyApp extends StatelessWidget {
         create: (context) => CategoryProvider()),
 
       ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            visualDensity: VisualDensity.adaptivePlatformDensity,
+        child: SafeArea(
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+            ),
+            home: AuthScreen(),
           ),
-          home: AuthScreen(),
         ),
     );
   }

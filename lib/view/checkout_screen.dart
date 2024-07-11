@@ -1,147 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../controller/cart_provider.dart';
+import '../model/category.dart';
 
-class CartScreen extends StatefulWidget {
-  @override
-  State<CartScreen> createState() => _CartScreenState();
-}
-
-class _CartScreenState extends State<CartScreen> {
+class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    CartProvider cartProvider=Provider.of<CartProvider>(context);
+    final cartProvider = Provider.of<CartProvider>(context);
+    final List<Product> cartItems = cartProvider.cartItems;
+
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Cart'),
+        title: const Text('Cart'),
+        backgroundColor: Colors.blue.shade100,
       ),
-      body: Consumer<CartProvider>(
-        builder: (context, cartProvider, _) {
-          if (cartProvider.cartItems.isEmpty) {
-            return Center(
-              child: Text('Your cart is empty'),
-            );
-          }
-          return ListView.builder(
-            itemCount: cartProvider.cartItems.length,
-            itemBuilder: (context, index) {
-              final product = cartProvider.cartItems[index];
-              return Card(
-                margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                child: Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Row(
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: cartItems.length,
+              itemBuilder: (context, index) {
+                final product = cartItems[index];
+                return ListTile(
+                  title: Text(product.name),
+                  subtitle: Text('Price: ₹${product.price}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Container(
-                      //   width: 80,
-                      //   height: 80,
-                      //   child: Image.asset(
-                      //     product.imageUrl,
-                      //     fit: BoxFit.cover,
-                      //   ),
-                      // ),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product.name,
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                            Text('Price: ₹${product.price}'),
-                            if (product.discount > 0)
-                              Text(
-                                'Discount: ${product.discount}%',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            Row(
-                              children: [
-                                Text('Quantity:'),
-                                SizedBox(width: 8),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(Icons.remove),
-                                      onPressed: () => cartProvider.decreaseProductQuantity(product),
-                                    ),
-                                    Text('${product.quantity}'),
-                                    IconButton(
-                                      icon: Icon(Icons.add),
-                                      onPressed: () => cartProvider.increaseProductQuantity(product),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                       IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => cartProvider.removeItem(product),
+                        icon: const Icon(Icons.remove),
+                        onPressed: () {
+                          cartProvider.decreaseProductQuantity(product);
+                        },
+                      ),
+                      Text('${product.quantity}'),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          cartProvider.addToCart(product);
+                        },
                       ),
                     ],
                   ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-      bottomNavigationBar: _buildBottomBar(context),
-    );
-  }
-
-  Widget _buildBottomBar(BuildContext context) {
-    return Container(
-      height: 70,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Consumer<CartProvider>(
-              builder: (context, cartProvider, _) => Text(
-                'Total: ₹${cartProvider.getTotalPrice()}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () {
-                // Implement place order functionality
-                _showOrderPlacedDialog(context);
+                );
               },
-              child: Text('Place Order'),
             ),
           ),
-        ],
-      ),
-    );
-  }
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Total: ₹${cartProvider.getTotalPrice().toStringAsFixed(2)}'),
+                ElevatedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Order successfully placed!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    cartProvider.clearCart();
 
-  void _showOrderPlacedDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Order Placed Successfully!'),
-        content: Text('Your order will be delivered soon.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.popUntil(context, ModalRoute.withName('/')); // Pop until HomeScreen
-              // Clear cart state
-              Provider.of<CartProvider>(context, listen: false).clearCart();
-            },
-            child: Text('OK'),
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Checkout'),
+
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
+

@@ -1,88 +1,162 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskproject/controller/cart_provider.dart';
 import 'package:taskproject/view/checkout_screen.dart';
 import '../controller/category_provider.dart';
+import '../controller/auth_provider.dart';
 
-class HomeScreen extends StatefulWidget {
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    CartProvider cartProvider=Provider.of<CartProvider>(context);
+    final authService = Provider.of<AuthService>(context);
+    final user = authService.user;
+    final cartProvider = Provider.of<CartProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Taza Kitchen'),
+        title: const Text('Taza Kitchen'),
+        backgroundColor: Colors.blue.shade100,
         actions: [
           IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // Implement search functionality
-            },
+            icon: const Icon(Icons.search),
+            onPressed: () {},
           ),
           IconButton(
-            icon: Icon(Icons.share),
-            onPressed: () {
-              // Implement share functionality
-            },
+            icon: const Icon(Icons.share),
+            onPressed: () {},
+          ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => CartScreen(),
+                    ),
+                  );
+                },
+              ),
+              Consumer<CartProvider>(
+                builder: (ctx, cartProvider, _) {
+                  if (cartProvider.totalItems > 0) {
+                    return Positioned(
+                      right: 4,
+                      top: 4,
+                      child: CircleAvatar(
+                        radius: 10,
+                        backgroundColor: Colors.red,
+                        child: Text(
+                          '${cartProvider.totalItems}',
+                          style: const TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ),
+                    );
+                  } else {
+                    return const SizedBox.shrink();
+                  }
+                },
+              ),
+            ],
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildRestaurantInfo(),
-          Expanded(child: _buildCategoryList(context)),
-        ],
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            UserAccountsDrawerHeader(
+              accountName: Text(user?.displayName ?? 'User'),
+              accountEmail: Text(user?.phoneNumber ?? user?.email ?? ''),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.orange,
+                child: Text(
+                  user?.displayName != null ? user!.displayName![0].toUpperCase() : 'U',
+                  style: const TextStyle(fontSize: 40.0),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.exit_to_app),
+              title: const Text('Logout'),
+              onTap: () async {
+                exit(0);
+              },
+            ),
+          ],
+        ),
+      ),
+      body: Container(
+        color: Colors.grey[200],
+        child: Column(
+          children: [
+            _buildRestaurantInfo(),
+            Expanded(child: _buildCategoryList(context, cartProvider)),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomBar(context),
     );
   }
 
   Widget _buildRestaurantInfo() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundImage: AssetImage('assets/images/rest_images.jpg'),
+    return Card(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundImage: AssetImage('assets/images/rest_images.jpg'),
+                ),
+                SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Taza Kitchen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('From Peyad'),
+                    Row(
+                      children: [
+                        Text('Member Since Aug 16, 2021'),
+                        SizedBox(width: 8),
+                        Icon(Icons.verified, color: Colors.blue),
+                      ],
+                    ),
+                    Text('FSSAI No: 21231317700450'),
+                  ],
+                ),
+                Spacer(),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Card(
+              child: Container(
+                color: Colors.teal.shade50,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildInfoColumn('14', 'Posts'),
+                    _buildInfoColumn('37', 'Followers'),
+                  ],
+                ),
               ),
-              SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Taza Kitchen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('From Peyad'),
-                  Row(
-                    children: [
-                      Text('Member Since Aug 16, 2021'),
-                      SizedBox(width: 8),
-                      Icon(Icons.verified, color: Colors.blue),
-                    ],
-                  ),
-                  Text('FSSAI No: 21231317700450'),
-                ],
-              ),
-              Spacer(),
-            ],
-          ),
-          SizedBox(height: 10,),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildInfoColumn('14', 'Posts'),
-              _buildInfoColumn('37', 'Followers'),
-            ],
-          ),
-          SizedBox(height: 10,),
-          _buildTabBar()
-        ],
+            ),
+            const SizedBox(height: 10),
+            _buildTabBar(),
+          ],
+        ),
       ),
     );
   }
@@ -90,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildInfoColumn(String count, String label) {
     return Column(
       children: [
-        Text(count, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(count, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         Text(label),
       ],
     );
@@ -114,14 +188,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryList(BuildContext context) {
+  Widget _buildCategoryList(BuildContext context, CartProvider cartProvider) {
     return FutureBuilder(
       future: Provider.of<CategoryProvider>(context, listen: false).fetchCategories(),
       builder: (ctx, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return Center(child: Text('An error occurred!'));
+          return const Center(child: Text('An error occurred!'));
         } else {
           return Consumer<CategoryProvider>(
             builder: (ctx, categoryProvider, _) => ListView.builder(
@@ -132,31 +206,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: Text(category.name),
                   children: category.products.map((product) {
                     return Card(
-                      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       child: Padding(
-                        padding: EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(8),
                         child: Row(
                           children: [
-                            // Container(
-                            //   width: 80,
-                            //   height: 80,
-                            //   child: Image.asset(
-                            //     product.imageUrl, // Dynamic image URL or path
-                            //     fit: BoxFit.cover,
-                            //   ),
-                            // ),
-                            SizedBox(width: 16),
+                            const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(product.name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  Text('(${product.minQty} min qty)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  Text(product.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  Text('(${product.minQty} min qty)', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                   Text('Price: ₹${product.price}'),
                                   if (product.discount > 0)
                                     Text(
                                       'Discount: ${product.discount}%',
-                                      style: TextStyle(color: Colors.red),
+                                      style: const TextStyle(color: Colors.red),
                                     ),
                                 ],
                               ),
@@ -164,16 +230,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             Column(
                               children: [
                                 IconButton(
-                                  icon: Icon(Icons.remove),
+                                  icon: const Icon(Icons.remove),
                                   onPressed: () {
-                                    Provider.of<CategoryProvider>(context, listen: false).decreaseProductQuantity(category, product);
+                                    if (product.quantity > 0) {
+                                      cartProvider.decreaseProductQuantity(product);
+                                    }
                                   },
                                 ),
-                                Text('${product.quantity}'), // Display the current quantity
+                                Text('${product.quantity}'),
                                 IconButton(
-                                  icon: Icon(Icons.add),
+                                  icon: const Icon(Icons.add),
                                   onPressed: () {
-                                    Provider.of<CategoryProvider>(context, listen: false).increaseProductQuantity(category, product);
+                                    cartProvider.addToCart(product);
                                   },
                                 ),
                               ],
@@ -195,15 +263,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomBar(BuildContext context) {
     return BottomAppBar(
       child: Container(
+        color: Colors.blue.shade300,
         height: 50,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Consumer<CategoryProvider>(
-                builder: (ctx, categoryProvider, _) {
-                  return Text('${categoryProvider.getTotalItems()} Items');
+              child: Consumer<CartProvider>(
+                builder: (ctx, cartProvider, _) {
+                  return Text('${cartProvider.totalItems} Items');
                 },
               ),
             ),
@@ -216,9 +285,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context) => CartScreen(),
                     ),
                   );
-
                 },
-                child: Text('Add to Cart'),
+                child: const Text('View Cart'),
               ),
             ),
           ],

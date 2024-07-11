@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:taskproject/view/home_screen.dart';
 import '../controller/auth_provider.dart';
+import 'home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
+
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -16,27 +18,25 @@ class _AuthScreenState extends State<AuthScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Firebase Auth'),
+        title: const Text('Login Screen'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () {
-                authService.signInWithGoogle();
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>HomeScreen()));
+                authService.signInWithGoogle(context);
               },
-              child: Text('Sign in with Google'),
+              icon: Image.asset('assets/google.jpg', height: 24),
+              label: Text('Sign in with Google'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () {
-
                 _showPhoneNumberInputDialog(context, authService);
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>HomeScreen()));
-
               },
-              child: Text('Sign in with Phone Number'),
+              icon: Image.asset('assets/phone.jpg', height: 24),
+              label: Text('Sign in with Phone Number'),
             ),
           ],
         ),
@@ -46,46 +46,56 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _showPhoneNumberInputDialog(BuildContext context, AuthService authService) {
     final phoneController = TextEditingController();
-    final codeController = TextEditingController();
-    String? verificationId;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Phone Number Sign In'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: phoneController,
-              decoration: InputDecoration(labelText: 'Phone Number'),
-            ),
-            TextField(
-              controller: codeController,
-              decoration: InputDecoration(labelText: 'Verification Code'),
-              enabled: verificationId != null,
-            ),
-          ],
+        title: const Text('Phone Number Sign In'),
+        content: TextField(
+          controller: phoneController,
+          decoration: const InputDecoration(labelText: 'Phone Number'),
         ),
         actions: [
           ElevatedButton(
             onPressed: () {
-              if (verificationId == null) {
-                authService.signInWithPhoneNumber(phoneController.text, (id) {
-                  verificationId = id;
-                  Navigator.of(context).pop();
-                  _showPhoneNumberInputDialog(context, authService);
-                });
-              } else {
-                PhoneAuthCredential credential = PhoneAuthProvider.credential(
-                  verificationId: verificationId!,
-                  smsCode: codeController.text,
-                );
-                authService.signInWithPhoneNumber(phoneController.text, (id) {});
+              authService.signInWithPhoneNumber(phoneController.text, (verificationId) {
                 Navigator.of(context).pop();
-              }
+                _showOtpInputDialog(context, authService, verificationId);
+              }, context);
             },
-            child: Text(verificationId == null ? 'Send Code' : 'Sign In'),
+            child: const Text('Send Code'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOtpInputDialog(BuildContext context, AuthService authService, String verificationId) {
+    final codeController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter Verification Code'),
+        content: TextField(
+          controller: codeController,
+          decoration: const InputDecoration(labelText: 'Verification Code'),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              PhoneAuthCredential credential = PhoneAuthProvider.credential(
+                verificationId: verificationId,
+                smsCode: codeController.text,
+              );
+              authService.signInWithCredential(credential).then((_) {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => HomeScreen()),
+                );
+              });
+            },
+            child: const Text('Sign In'),
           ),
         ],
       ),

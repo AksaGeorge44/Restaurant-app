@@ -23,7 +23,7 @@ class Product {
   final double price;
   final int discount;
   final int minQty;
-  int quantity; // Add this line
+  int quantity;
 
   Product({
     required this.id,
@@ -31,7 +31,7 @@ class Product {
     required this.price,
     required this.discount,
     required this.minQty,
-    this.quantity = 0, // Default quantity is 0
+    this.quantity = 0,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {

@@ -1,5 +1,4 @@
-import 'package:flutter/cupertino.dart';
-
+import 'package:flutter/material.dart';
 import '../model/category.dart';
 
 class CartProvider with ChangeNotifier {
@@ -8,25 +7,35 @@ class CartProvider with ChangeNotifier {
   List<Product> get cartItems => _cartItems;
 
   void addToCart(Product product) {
-    _cartItems.add(product);
+    final index = _cartItems.indexWhere((item) => item.id == product.id);
+    if (index != -1) {
+      _cartItems[index].quantity++;
+    } else {
+      product.quantity = 1;
+      _cartItems.add(product);
+    }
     notifyListeners();
   }
 
   void removeItem(Product product) {
-    _cartItems.remove(product);
+    _cartItems.removeWhere((item) => item.id == product.id);
     notifyListeners();
   }
 
   void decreaseProductQuantity(Product product) {
-    final index = _cartItems.indexOf(product);
-    if (index != -1 && _cartItems[index].quantity > 0) {
-      _cartItems[index].quantity--;
+    final index = _cartItems.indexWhere((item) => item.id == product.id);
+    if (index != -1) {
+      if (_cartItems[index].quantity > 1) {
+        _cartItems[index].quantity--;
+      } else {
+        _cartItems.removeAt(index);
+      }
       notifyListeners();
     }
   }
 
   void increaseProductQuantity(Product product) {
-    final index = _cartItems.indexOf(product);
+    final index = _cartItems.indexWhere((item) => item.id == product.id);
     if (index != -1) {
       _cartItems[index].quantity++;
       notifyListeners();
@@ -39,6 +48,10 @@ class CartProvider with ChangeNotifier {
       totalPrice += product.price * product.quantity;
     }
     return totalPrice;
+  }
+
+  int get totalItems {
+    return _cartItems.fold(0, (sum, item) => sum + item.quantity);
   }
 
   void clearCart() {
